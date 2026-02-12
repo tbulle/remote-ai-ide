@@ -1,0 +1,1 @@
+../../.claude-shared/agents/scout.md

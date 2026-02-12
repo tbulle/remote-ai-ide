@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [],
+    "deny": [],
+    "ask": []
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": {},
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude-shared/hooks/auto-update-memory.js",
+            "timeout": 30000
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": {},
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude-shared/scripts/hooks/pre-compact.js"
+          }
+        ]
+      }
+    ]
+  }
+}

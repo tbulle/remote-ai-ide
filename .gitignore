@@ -1,0 +1,39 @@
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build outputs
+bin/
+obj/
+dist/
+build/
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+
+# Claude pipeline state (ephemeral, session-specific)
+.claude/pipeline-state.md
+
+# Logs
+logs/
+*.log
+
+# Database files
+*.db
+*.sqlite
+
+# OS files
+Thumbs.db
+
+# Test coverage
+coverage/
+*.coverage

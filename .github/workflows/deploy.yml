@@ -76,19 +76,23 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
+          envs: GHCR_PAT,GITHUB_ACTOR
           script: |
+            set -e
+
             # Ensure GHCR pull secret exists
             kubectl -n lifetracker get secret ghcr-secret 2>/dev/null || \
               kubectl -n lifetracker create secret docker-registry ghcr-secret \
                 --docker-server=ghcr.io \
-                --docker-username=${{ github.actor }} \
-                --docker-password=${{ secrets.GHCR_PAT }}
+                --docker-username="$GITHUB_ACTOR" \
+                --docker-password="$GHCR_PAT"
 
-            # Apply manifests from repo (clone/pull latest)
+            # Clone or pull repo (authenticated for private repos)
+            REPO_URL="https://${GITHUB_ACTOR}:${GHCR_PAT}@github.com/tbulle/remote-ai-ide.git"
             if [ -d /root/remote-ai-ide ]; then
               cd /root/remote-ai-ide && git pull
             else
-              git clone https://github.com/tbulle/remote-ai-ide.git /root/remote-ai-ide
+              git clone "$REPO_URL" /root/remote-ai-ide
             fi
 
             kubectl apply -k /root/remote-ai-ide/k8s/
@@ -100,3 +104,6 @@ jobs:
             # Wait for rollout
             kubectl -n lifetracker rollout status deployment/remote-ai-ide-backend --timeout=120s
             kubectl -n lifetracker rollout status deployment/remote-ai-ide-frontend --timeout=120s
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}

@@ -12,6 +12,10 @@ export async function authHook(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
+  if (appConfig.authTokens.length === 0) {
+    return;
+  }
+
   const authHeader = request.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     reply.code(401).send({ error: 'Missing or invalid Authorization header' });

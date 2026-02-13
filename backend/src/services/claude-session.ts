@@ -106,14 +106,12 @@ export class ClaudeSession {
 
       const assistantSeq = this.nextSeq();
       this.addMessage('assistant', fullContent, assistantSeq);
+      this.status = 'ready';
       onComplete(fullContent, assistantSeq);
     } catch (err: unknown) {
       this.status = 'error';
       onError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      if (this.status !== 'error') {
-        this.status = 'ready';
-      }
       this.abortController = null;
     }
   }

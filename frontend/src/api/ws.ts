@@ -42,7 +42,7 @@ export class WebSocketClient {
   connect(): void {
     if (this.ws?.readyState === WebSocket.OPEN) return;
 
-    const wsUrl = `${this.url}?token=${encodeURIComponent(this.token)}`;
+    const wsUrl = `${this.url}/ws?token=${encodeURIComponent(this.token)}`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {

@@ -29,11 +29,11 @@ export default function ProjectSelector({ token, onSelect, onCancel }: ProjectSe
     setCreating(true);
     setError(null);
     try {
-      const result = await apiCall<{ sessionId: string }>('/api/sessions', token, {
+      const result = await apiCall<{ id: string }>('/api/sessions', token, {
         method: 'POST',
         body: JSON.stringify({ projectPath }),
       });
-      onSelect(result.sessionId);
+      onSelect(result.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create session');
       setCreating(false);

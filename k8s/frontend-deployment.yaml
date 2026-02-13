@@ -18,6 +18,8 @@ spec:
         app: remote-ai-ide
         component: frontend
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: frontend
           image: ghcr.io/tbulle/remote-ai-ide-frontend:latest

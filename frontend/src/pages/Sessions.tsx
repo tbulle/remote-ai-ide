@@ -13,17 +13,19 @@ interface Session {
 }
 
 export default function Sessions() {
-  const { token, logout } = useAuth();
+  const { activeServer, logout } = useAuth();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const token = activeServer?.token ?? null;
+  const serverUrl = activeServer?.url ?? null;
 
   const fetchSessions = useCallback(async () => {
-    if (!token) return;
+    if (!token || !serverUrl) return;
     try {
-      const data = await apiCall<Session[]>('/api/sessions', token);
+      const data = await apiCall<Session[]>('/api/sessions', token, undefined, serverUrl);
       setSessions(data);
       setError(null);
     } catch (e) {
@@ -31,16 +33,16 @@ export default function Sessions() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, serverUrl]);
 
   useEffect(() => {
     fetchSessions();
   }, [fetchSessions]);
 
   const handleDelete = async (sessionId: string) => {
-    if (!token) return;
+    if (!token || !serverUrl) return;
     try {
-      await apiCall(`/api/sessions/${sessionId}`, token, { method: 'DELETE' });
+      await apiCall(`/api/sessions/${sessionId}`, token, { method: 'DELETE' }, serverUrl);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to delete session');
@@ -75,13 +77,26 @@ export default function Sessions() {
     <div className="min-h-screen bg-[#1a1a2e] p-4">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-[#e0e0e0]">Sessions</h1>
-          <button
-            onClick={logout}
-            className="text-sm text-gray-400 hover:text-gray-200"
-          >
-            Logout
-          </button>
+          <div>
+            <h1 className="text-xl font-semibold text-[#e0e0e0]">Sessions</h1>
+            <div className="text-xs text-gray-500 mt-1">
+              {activeServer?.name ?? 'No server selected'}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/login')}
+              className="text-sm text-gray-400 hover:text-gray-200"
+            >
+              Switch Server
+            </button>
+            <button
+              onClick={logout}
+              className="text-sm text-gray-400 hover:text-gray-200"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -148,9 +163,10 @@ export default function Sessions() {
           </div>
         )}
 
-        {showProjectSelector && token && (
+        {showProjectSelector && token && serverUrl && (
           <ProjectSelector
             token={token}
+            serverUrl={serverUrl}
             onSelect={handleNewSession}
             onCancel={() => setShowProjectSelector(false)}
           />

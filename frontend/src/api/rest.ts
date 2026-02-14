@@ -1,19 +1,27 @@
 export async function apiCall<T = unknown>(
   path: string,
   token: string,
-  options?: RequestInit
+  options?: RequestInit,
+  baseUrl?: string
 ): Promise<T> {
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
-  const res = await fetch(`${baseUrl}${path}`, {
+  const resolvedBaseUrl = baseUrl || import.meta.env.VITE_API_URL || 'http://localhost:3002';
+  const method = options?.method?.toUpperCase();
+  const hasBody = options?.body != null;
+  const shouldSetJsonContentType =
+    hasBody && (method === 'POST' || method === 'PUT' || method === 'PATCH');
+  const res = await fetch(`${resolvedBaseUrl}${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      ...(shouldSetJsonContentType ? { 'Content-Type': 'application/json' } : {}),
       ...options?.headers,
     },
   });
   if (!res.ok) {
     throw new Error(`API error: ${res.status}`);
+  }
+  if (res.status === 204) {
+    return undefined as T;
   }
   return res.json() as Promise<T>;
 }

@@ -8,31 +8,42 @@ interface Project {
 
 interface ProjectSelectorProps {
   token: string;
+  serverUrl: string;
   onSelect: (sessionId: string) => void;
   onCancel: () => void;
 }
 
-export default function ProjectSelector({ token, onSelect, onCancel }: ProjectSelectorProps) {
+export default function ProjectSelector({
+  token,
+  serverUrl,
+  onSelect,
+  onCancel,
+}: ProjectSelectorProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiCall<Project[]>('/api/projects', token)
+    apiCall<Project[]>('/api/projects', token, undefined, serverUrl)
       .then(setProjects)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, serverUrl]);
 
   const handleSelect = async (projectPath: string) => {
     setCreating(true);
     setError(null);
     try {
-      const result = await apiCall<{ id: string }>('/api/sessions', token, {
-        method: 'POST',
-        body: JSON.stringify({ projectPath }),
-      });
+      const result = await apiCall<{ id: string }>(
+        '/api/sessions',
+        token,
+        {
+          method: 'POST',
+          body: JSON.stringify({ projectPath }),
+        },
+        serverUrl
+      );
       onSelect(result.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create session');

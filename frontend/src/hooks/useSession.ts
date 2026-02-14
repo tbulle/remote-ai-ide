@@ -32,7 +32,8 @@ interface SessionReplayResponse {
 export function useSession(
   sessionId: string,
   wsClient: WebSocketClient | null,
-  token: string | null
+  token: string | null,
+  baseUrl: string | null
 ) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<'ready' | 'busy' | 'error'>('ready');
@@ -134,14 +135,16 @@ export function useSession(
     });
 
     const replayMissedMessages = async () => {
-      if (!sessionId || !token) return;
+      if (!sessionId || !token || !baseUrl) return;
       if (replayInFlightRef.current) return;
       replayInFlightRef.current = true;
 
       try {
         const data = await apiCall<SessionReplayResponse>(
           `/api/sessions/${encodeURIComponent(sessionId)}?since=${lastSeqRef.current}`,
-          token
+          token,
+          undefined,
+          baseUrl
         );
 
         if (!data.messages.length) return;
@@ -236,7 +239,7 @@ export function useSession(
       offResult();
       offConnected();
     };
-  }, [wsClient, sessionId, token]);
+  }, [wsClient, sessionId, token, baseUrl]);
 
   const sendMessage = useCallback(
     (text: string) => {

@@ -8,8 +8,10 @@ import PermissionDialog from '../components/PermissionDialog';
 export default function Chat() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
-  const { token } = useAuth();
-  const { client, connected } = useWebSocket(token);
+  const { activeServer } = useAuth();
+  const token = activeServer?.token ?? null;
+  const serverUrl = activeServer?.url ?? null;
+  const { client, connected } = useWebSocket(token, serverUrl);
   const {
     messages,
     status,
@@ -18,7 +20,7 @@ export default function Chat() {
     respondPermission,
     interrupt,
     resetSession,
-  } = useSession(sessionId!, client, token);
+  } = useSession(sessionId!, client, token, serverUrl);
 
   return (
     <div className="h-screen flex flex-col bg-[#1a1a2e]">

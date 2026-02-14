@@ -1,14 +1,27 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { WebSocketClient, type ClientMessage } from '../api/ws';
 
-export function useWebSocket(token: string | null) {
+function toWebSocketUrl(serverUrl: string) {
+  if (serverUrl.startsWith('https://')) {
+    return `wss://${serverUrl.slice('https://'.length)}`;
+  }
+  if (serverUrl.startsWith('http://')) {
+    return `ws://${serverUrl.slice('http://'.length)}`;
+  }
+  if (serverUrl.startsWith('wss://') || serverUrl.startsWith('ws://')) {
+    return serverUrl;
+  }
+  return serverUrl;
+}
+
+export function useWebSocket(token: string | null, serverUrl: string | null) {
   const clientRef = useRef<WebSocketClient | null>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !serverUrl) return;
 
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3002';
+    const wsUrl = toWebSocketUrl(serverUrl);
     const client = new WebSocketClient(wsUrl, token);
     clientRef.current = client;
 
@@ -23,7 +36,7 @@ export function useWebSocket(token: string | null) {
       client.disconnect();
       clientRef.current = null;
     };
-  }, [token]);
+  }, [token, serverUrl]);
 
   const send = useCallback((msg: ClientMessage) => {
     clientRef.current?.send(msg);

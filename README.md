@@ -151,6 +151,29 @@ kubectl apply -k k8s/
 
 The backend pod mounts the host's `/root` directory at `/root` inside the container via a `hostPath` volume. This gives AI sessions access to git repos, SSH keys, git config, and Claude settings on the host. The container image includes `bash`, `git`, and `openssh` for full Claude Code functionality.
 
+### MCP Server Configuration
+
+MCP servers are configured in Claude's settings file (`~/.claude/settings.json`) on the host. The backend image ships with only `claude-code` pre-installed — additional tools are installed dynamically at container startup.
+
+**Pre-installing packages** (recommended for fast cold starts):
+
+Create these files on the host (mounted via `/root`):
+
+`~/.claude/mcp-packages.txt` — npm packages, one per line:
+```
+@openai/codex
+@modelcontextprotocol/server-github
+```
+
+`~/.claude/apk-packages.txt` — Alpine system packages, one per line:
+```
+github-cli
+```
+
+On pod restart, the entrypoint script installs these before starting the backend. No image rebuild needed.
+
+**Alternative**: Use `npx -y <package>` in your MCP server commands. This auto-downloads on first use but has a slower cold start per session.
+
 CI/CD via GitHub Actions (.github/workflows/deploy.yml) — builds images, pushes to GHCR, deploys to VPS via SSH.
 
 Required GitHub secrets: VPS_HOST, VPS_USER, VPS_PASSWORD, GHCR_PAT

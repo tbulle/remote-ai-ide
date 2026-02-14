@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import clsx from 'clsx';
 import type { ChatMessage } from '../hooks/useSession';
 import VoiceButton from './VoiceButton';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 interface ChatViewProps {
   messages: ChatMessage[];
@@ -43,6 +44,21 @@ export default function ChatView({
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSendFromShortcut = () => {
+    if (!input.trim()) return;
+    onSend(input.trim());
+    setInput('');
+    inputRef.current?.focus();
+  };
+
+  useKeyboardShortcuts({
+    status,
+    onInterrupt,
+    onSend: handleSendFromShortcut,
+    inputRef,
+    scrollRef,
+  });
 
   useEffect(() => {
     if (scrollRef.current) {

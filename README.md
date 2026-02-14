@@ -19,6 +19,23 @@ A lightweight remote client for AI-assisted development. Connect from any device
                                 [Whisper STT]
 ```
 
+## Authentication
+
+The backend requires two types of authentication:
+
+1. **Client auth** (`AUTH_TOKENS`) — Bearer tokens for PWA/CLI connections. Comma-separated list. Empty = no auth required.
+2. **AI auth** — The backend uses the Claude Code SDK which needs valid OAuth credentials at `~/.claude/.credentials.json`. Run `claude login` on the host to generate these, then mount them into the container.
+
+For k8s, create a secret from the credentials file:
+```bash
+kubectl create secret generic claude-credentials -n <namespace> \
+  --from-file=.credentials.json=$HOME/.claude/.credentials.json
+
+# Then add a volume mount to the backend deployment:
+# mountPath: /root/.claude/.credentials.json
+# subPath: .credentials.json
+```
+
 ## Quick Start
 
 ### Backend
@@ -37,6 +54,7 @@ Environment variables:
 - MAX_SESSIONS (default: 10)
 - SESSION_TIMEOUT_MS (default: 3600000)
 - WHISPER_MODEL (default: base)
+- DEFAULT_CWD — working directory for AI sessions (default: $HOME)
 
 ### CLI
 Requires Go 1.24+

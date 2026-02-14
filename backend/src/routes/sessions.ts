@@ -1,4 +1,6 @@
 import type { FastifyInstance } from 'fastify';
+import { existsSync, readdirSync, statSync } from 'fs';
+import { join } from 'path';
 import { sessionManager } from '../services/session-manager.js';
 import { appConfig } from '../config/index.js';
 
@@ -7,6 +9,35 @@ interface CreateSessionBody {
 }
 
 export async function sessionRoutes(fastify: FastifyInstance): Promise<void> {
+  fastify.get('/api/projects', async () => {
+    const baseDir = process.env.HOME || '/root';
+
+    try {
+      const entries = readdirSync(baseDir);
+      const projects: { name: string; path: string }[] = [];
+
+      for (const entry of entries) {
+        if (entry.startsWith('.') || entry === 'node_modules') continue;
+        const fullPath = join(baseDir, entry);
+        try {
+          if (!statSync(fullPath).isDirectory()) continue;
+          if (
+            existsSync(join(fullPath, '.git')) ||
+            existsSync(join(fullPath, 'package.json'))
+          ) {
+            projects.push({ name: entry, path: fullPath });
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      return projects.sort((a, b) => a.name.localeCompare(b.name));
+    } catch {
+      return [];
+    }
+  });
+
   fastify.post<{ Body: CreateSessionBody | undefined }>(
     '/api/sessions',
     async (request, reply) => {

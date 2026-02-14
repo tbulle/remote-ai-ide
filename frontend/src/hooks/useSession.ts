@@ -38,6 +38,10 @@ export function useSession(
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<'ready' | 'busy' | 'error'>('ready');
   const [pendingPermission, setPendingPermission] = useState<PendingPermission | null>(null);
+  const [currentTool, setCurrentTool] = useState<{
+    toolName: string;
+    toolInput: Record<string, unknown>;
+  } | null>(null);
   const seqRef = useRef(0);
   const lastSeqRef = useRef(0);
   const hadConnectionRef = useRef(false);
@@ -127,11 +131,21 @@ export function useSession(
     const offState = wsClient.on('session_state', (msg: ServerMessage) => {
       if (msg.type !== 'session_state' || msg.sessionId !== sessionId) return;
       setStatus(msg.status);
+      if (msg.status !== 'busy') {
+        setCurrentTool(null);
+      }
     });
 
     const offResult = wsClient.on('result', (msg: ServerMessage) => {
       if (msg.type !== 'result' || msg.sessionId !== sessionId) return;
       setStatus('ready');
+      setCurrentTool(null);
+    });
+
+    const offToolEvent = wsClient.on('tool_event', (msg: ServerMessage) => {
+      if (msg.type !== 'tool_event' || msg.sessionId !== sessionId) return;
+      lastSeqRef.current = Math.max(lastSeqRef.current, msg.seq);
+      setCurrentTool({ toolName: msg.toolName, toolInput: msg.toolInput });
     });
 
     const replayMissedMessages = async () => {
@@ -237,6 +251,7 @@ export function useSession(
       offPermission();
       offState();
       offResult();
+      offToolEvent();
       offConnected();
     };
   }, [wsClient, sessionId, token, baseUrl]);
@@ -301,6 +316,7 @@ export function useSession(
     messages,
     status,
     pendingPermission,
+    currentTool,
     sendMessage,
     respondPermission,
     interrupt,

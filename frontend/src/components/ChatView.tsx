@@ -7,6 +7,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 interface ChatViewProps {
   messages: ChatMessage[];
   status: 'ready' | 'busy' | 'error';
+  currentTool?: { toolName: string; toolInput: Record<string, unknown> } | null;
   onSend: (text: string) => void;
   onInterrupt: () => void;
   onReset: () => void;
@@ -34,9 +35,40 @@ function formatContent(content: string) {
   });
 }
 
+function formatToolLabel(toolName: string, toolInput: Record<string, unknown>): string {
+  const name = toolName.replace(/^mcp__\w+__/, '');
+  switch (name) {
+    case 'Read':
+      return `Reading ${toolInput.file_path || 'file'}`;
+    case 'Write':
+      return `Writing ${toolInput.file_path || 'file'}`;
+    case 'Edit':
+      return `Editing ${toolInput.file_path || 'file'}`;
+    case 'Bash':
+      return `Running ${
+        typeof toolInput.command === 'string'
+          ? toolInput.command.slice(0, 60)
+          : 'command'
+      }`;
+    case 'Glob':
+      return `Searching files: ${toolInput.pattern || ''}`;
+    case 'Grep':
+      return `Searching for: ${toolInput.pattern || ''}`;
+    case 'Task':
+      return 'Running agent task';
+    case 'WebSearch':
+      return 'Searching web';
+    case 'WebFetch':
+      return 'Fetching URL';
+    default:
+      return `Using ${name}`;
+  }
+}
+
 export default function ChatView({
   messages,
   status,
+  currentTool,
   onSend,
   onInterrupt,
   onReset,
@@ -105,14 +137,23 @@ export default function ChatView({
           </div>
         ))}
 
-        {status === 'busy' && messages[messages.length - 1]?.role !== 'assistant' && (
+        {status === 'busy' && (
           <div className="flex justify-start">
-            <div className="bg-[#16213e] rounded-2xl px-4 py-2">
-              <span className="inline-flex gap-1">
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.2s]" />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.4s]" />
-              </span>
+            <div className="bg-[#16213e] rounded-2xl px-4 py-2 text-xs text-gray-400">
+              {currentTool ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse shrink-0" />
+                  <span className="truncate">
+                    {formatToolLabel(currentTool.toolName, currentTool.toolInput)}
+                  </span>
+                </span>
+              ) : (
+                <span className="inline-flex gap-1">
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.2s]" />
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.4s]" />
+                </span>
+              )}
             </div>
           </div>
         )}

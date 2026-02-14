@@ -7,6 +7,7 @@ export type {
   AssistantChunk,
   AssistantMessage,
   PermissionRequest,
+  ToolEvent,
   SessionState,
   ResultMessage,
   ServerMessage,

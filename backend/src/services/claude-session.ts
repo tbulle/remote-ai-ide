@@ -1,12 +1,24 @@
 import { query } from '@anthropic-ai/claude-code';
-import type { SDKMessage, PermissionResult, PermissionUpdate } from '@anthropic-ai/claude-code';
+import type { SDKMessage, PermissionResult, PermissionUpdate, McpServerConfig } from '@anthropic-ai/claude-code';
 import { v4 as uuidv4 } from 'uuid';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 interface MessageEntry {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
   seq: number;
+}
+
+function loadMcpServers(): Record<string, McpServerConfig> | undefined {
+  try {
+    const settingsPath = join(process.env.HOME || '/root', '.claude', 'settings.json');
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+    return settings.mcpServers as Record<string, McpServerConfig> | undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export class ClaudeSession {
@@ -63,7 +75,8 @@ export class ClaudeSession {
         prompt: text,
         options: {
           cwd: this.projectPath,
-          allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep'],
+          allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'mcp__*'],
+          mcpServers: loadMcpServers(),
           abortController: this.abortController,
           maxTurns: 30,
           canUseTool: async (

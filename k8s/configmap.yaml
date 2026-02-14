@@ -12,3 +12,4 @@ data:
   MAX_SESSIONS: "10"
   SESSION_TIMEOUT_MS: "3600000"
   WHISPER_MODEL: "base"
+  DEFAULT_CWD: "/root"

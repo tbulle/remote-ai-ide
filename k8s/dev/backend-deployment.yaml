@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: remote-ai-ide-backend
+  namespace: lifetracker
+  labels:
+    app: remote-ai-ide-dev
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: remote-ai-ide-dev
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: remote-ai-ide-dev
+        component: backend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: backend
+          image: ghcr.io/tbulle/remote-ai-ide-backend:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3002
+          envFrom:
+            - configMapRef:
+                name: remote-ai-ide-config
+            - secretRef:
+                name: remote-ai-ide-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 5
+            periodSeconds: 10

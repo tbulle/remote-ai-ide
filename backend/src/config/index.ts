@@ -9,4 +9,5 @@ export const appConfig = {
   whisperModel: process.env.WHISPER_MODEL || 'base',
   maxSessions: parseInt(process.env.MAX_SESSIONS || '10', 10),
   sessionTimeoutMs: parseInt(process.env.SESSION_TIMEOUT_MS || '3600000', 10),
+  DEFAULT_CWD: process.env.DEFAULT_CWD || process.env.HOME || '/root',
 };

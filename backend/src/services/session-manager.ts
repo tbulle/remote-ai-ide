@@ -6,13 +6,15 @@ export class SessionManager {
   private sessions = new Map<string, ClaudeSession>();
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
-  create(projectPath: string): ClaudeSession {
+  create(projectPath?: string): ClaudeSession {
     if (this.sessions.size >= appConfig.maxSessions) {
       throw new Error(`Max sessions (${appConfig.maxSessions}) reached`);
     }
 
     const id = uuidv4();
-    const session = new ClaudeSession(id, projectPath);
+    const sanitizedProjectPath = projectPath?.trim();
+    const resolvedProjectPath = sanitizedProjectPath || appConfig.DEFAULT_CWD;
+    const session = new ClaudeSession(id, resolvedProjectPath);
     this.sessions.set(id, session);
     return session;
   }

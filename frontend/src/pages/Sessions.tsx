@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { apiCall } from '../api/rest';
-import ProjectSelector from '../components/ProjectSelector';
 
 interface Session {
   id: string;
@@ -18,7 +17,7 @@ export default function Sessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [creatingSession, setCreatingSession] = useState(false);
   const token = activeServer?.token ?? null;
   const serverUrl = activeServer?.url ?? null;
 
@@ -49,9 +48,23 @@ export default function Sessions() {
     }
   };
 
-  const handleNewSession = (sessionId: string) => {
-    setShowProjectSelector(false);
-    navigate(`/chat/${sessionId}`);
+  const handleCreateSession = async () => {
+    if (!token || !serverUrl || creatingSession) return;
+    setCreatingSession(true);
+    setError(null);
+    try {
+      const session = await apiCall<{ id: string }>(
+        '/api/sessions',
+        token,
+        { method: 'POST' },
+        serverUrl
+      );
+      navigate(`/chat/${session.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to create session');
+    } finally {
+      setCreatingSession(false);
+    }
   };
 
   const projectName = (path: string) => {
@@ -106,8 +119,9 @@ export default function Sessions() {
         )}
 
         <button
-          onClick={() => setShowProjectSelector(true)}
-          className="w-full bg-[#0f3460] hover:bg-[#0f3460]/80 text-white rounded-lg py-3 mb-4 text-sm font-medium min-h-[44px] transition-colors"
+          onClick={handleCreateSession}
+          disabled={!token || !serverUrl || creatingSession}
+          className="w-full bg-[#0f3460] hover:bg-[#0f3460]/80 disabled:bg-[#0f3460]/50 disabled:cursor-not-allowed text-white rounded-lg py-3 mb-4 text-sm font-medium min-h-[44px] transition-colors"
         >
           New Session
         </button>
@@ -163,14 +177,6 @@ export default function Sessions() {
           </div>
         )}
 
-        {showProjectSelector && token && serverUrl && (
-          <ProjectSelector
-            token={token}
-            serverUrl={serverUrl}
-            onSelect={handleNewSession}
-            onCancel={() => setShowProjectSelector(false)}
-          />
-        )}
       </div>
     </div>
   );

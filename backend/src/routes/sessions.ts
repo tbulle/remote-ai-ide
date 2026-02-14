@@ -1,21 +1,20 @@
 import type { FastifyInstance } from 'fastify';
 import { sessionManager } from '../services/session-manager.js';
+import { appConfig } from '../config/index.js';
 
 interface CreateSessionBody {
-  projectPath: string;
+  projectPath?: string;
 }
 
 export async function sessionRoutes(fastify: FastifyInstance): Promise<void> {
-  fastify.post<{ Body: CreateSessionBody }>(
+  fastify.post<{ Body: CreateSessionBody | undefined }>(
     '/api/sessions',
     async (request, reply) => {
-      const { projectPath } = request.body;
-      if (!projectPath || typeof projectPath !== 'string') {
-        return reply.code(400).send({ error: 'projectPath is required' });
-      }
+      const projectPath = request.body?.projectPath?.trim();
+      const resolvedProjectPath = projectPath || appConfig.DEFAULT_CWD;
 
       try {
-        const session = sessionManager.create(projectPath);
+        const session = sessionManager.create(resolvedProjectPath);
         return reply.code(201).send({
           id: session.id,
           projectPath: session.projectPath,

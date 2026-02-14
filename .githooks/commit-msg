@@ -1,8 +1,0 @@
-#!/bin/bash
-# Strip Claude/Anthropic references from commit messages
-MSG_FILE="$1"
-# Remove Co-Authored-By lines mentioning Claude/Anthropic
-sed -i '/Co-Authored-By.*[Cc]laude/d' "$MSG_FILE"
-sed -i '/Co-Authored-By.*anthropic/d' "$MSG_FILE"
-# Remove trailing blank lines
-sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$MSG_FILE"

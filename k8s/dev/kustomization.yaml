@@ -3,8 +3,8 @@ kind: Kustomization
 namespace: lifetracker
 namePrefix: dev-
 resources:
-  - ../configmap.yaml
-  - ../secret.yaml
+  - configmap.yaml
+  - secret.yaml
   - backend-deployment.yaml
   - frontend-deployment.yaml
   - backend-service.yaml

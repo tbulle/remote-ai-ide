@@ -4,7 +4,7 @@ export async function apiCall<T = unknown>(
   options?: RequestInit,
   baseUrl?: string
 ): Promise<T> {
-  const resolvedBaseUrl = baseUrl || import.meta.env.VITE_API_URL || 'http://localhost:3002';
+  const resolvedBaseUrl = baseUrl || import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}${window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? ':3002' : ''}`;
   const method = options?.method?.toUpperCase();
   const hasBody = options?.body != null;
   const shouldSetJsonContentType =

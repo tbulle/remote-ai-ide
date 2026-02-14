@@ -41,7 +41,12 @@ const LEGACY_TOKEN_KEY = 'auth_token';
 const DEFAULT_SERVER_NAME = 'Default Server';
 
 function getDefaultServerUrl() {
-  return import.meta.env.VITE_API_URL || 'http://localhost:3002';
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  const { protocol, hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return `${protocol}//${hostname}:3002`;
+  }
+  return `${protocol}//${hostname}`;
 }
 
 function parseServerProfiles(raw: string | null): ServerProfile[] {

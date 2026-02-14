@@ -149,6 +149,8 @@ kubectl apply -k k8s/
 # - Deployment: remote-ai-ide-frontend (port 80, NodePort 30021)
 ```
 
+The backend pod mounts the host's `/root` directory at `/host-root/` inside the container via a `hostPath` volume. This gives AI sessions access to git repos and project directories on the host. Set `DEFAULT_CWD` to `/host-root/<repo>` to start sessions in a specific project.
+
 CI/CD via GitHub Actions (.github/workflows/deploy.yml) — builds images, pushes to GHCR, deploys to VPS via SSH.
 
 Required GitHub secrets: VPS_HOST, VPS_USER, VPS_PASSWORD, GHCR_PAT

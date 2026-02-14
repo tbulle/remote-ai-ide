@@ -61,6 +61,14 @@ export interface PermissionRequest {
   description: string;
 }
 
+export interface ToolEvent {
+  type: 'tool_event';
+  sessionId: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  seq: number;
+}
+
 export interface SessionState {
   type: 'session_state';
   sessionId: string;
@@ -80,5 +88,6 @@ export type ServerMessage =
   | AssistantChunk
   | AssistantMessage
   | PermissionRequest
+  | ToolEvent
   | SessionState
   | ResultMessage;

@@ -7,6 +7,7 @@ interface CreateSessionBody {
 }
 
 export async function sessionRoutes(fastify: FastifyInstance): Promise<void> {
+
   fastify.post<{ Body: CreateSessionBody | undefined }>(
     '/api/sessions',
     async (request, reply) => {

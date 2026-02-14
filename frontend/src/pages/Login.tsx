@@ -21,7 +21,9 @@ export default function Login() {
       return;
     }
     const server: ServerProfile = {
-      id: crypto.randomUUID(),
+      id:
+        crypto.randomUUID?.() ??
+        Math.random().toString(36).slice(2) + Date.now().toString(36),
       name: trimmedName,
       url: trimmedUrl,
       token: trimmedToken,

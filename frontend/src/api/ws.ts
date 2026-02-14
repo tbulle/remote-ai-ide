@@ -6,6 +6,7 @@ import type {
   ResultMessage,
   ServerMessage,
   SessionState,
+  ToolEvent,
 } from '@shared/types/ws-messages';
 
 export type {
@@ -16,6 +17,7 @@ export type {
   ResultMessage,
   ServerMessage,
   SessionState,
+  ToolEvent,
 };
 
 type EventCallback = (data: ServerMessage) => void;

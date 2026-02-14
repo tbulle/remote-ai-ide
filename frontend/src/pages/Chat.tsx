@@ -16,6 +16,7 @@ export default function Chat() {
     messages,
     status,
     pendingPermission,
+    currentTool,
     sendMessage,
     respondPermission,
     interrupt,
@@ -53,6 +54,7 @@ export default function Chat() {
         <ChatView
           messages={messages}
           status={status}
+          currentTool={currentTool}
           onSend={sendMessage}
           onInterrupt={interrupt}
           onReset={resetSession}

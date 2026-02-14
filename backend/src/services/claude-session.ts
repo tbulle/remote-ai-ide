@@ -60,6 +60,11 @@ export class ClaudeSession {
       toolInput: Record<string, unknown>;
       description: string;
     }) => void,
+    onToolEvent: (
+      toolName: string,
+      toolInput: Record<string, unknown>,
+      seq: number
+    ) => void,
     onComplete: (fullContent: string, seq: number) => void,
     onError: (error: string) => void,
   ): Promise<void> {
@@ -109,6 +114,10 @@ export class ClaudeSession {
               const seq = this.nextSeq();
               onChunk(block.text, seq);
               fullContent += block.text;
+            }
+            if (block.type === 'tool_use') {
+              const seq = this.nextSeq();
+              onToolEvent(block.name, block.input as Record<string, unknown>, seq);
             }
           }
         } else if (message.type === 'result') {

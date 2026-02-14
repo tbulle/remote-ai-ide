@@ -73,7 +73,9 @@ function loadInitialAuthState() {
 
   if (servers.length === 0 && legacyToken) {
     const migratedServer: ServerProfile = {
-      id: crypto.randomUUID(),
+      id:
+        crypto.randomUUID?.() ??
+        Math.random().toString(36).slice(2) + Date.now().toString(36),
       name: DEFAULT_SERVER_NAME,
       url: getDefaultServerUrl(),
       token: legacyToken,

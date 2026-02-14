@@ -98,6 +98,15 @@ export async function wsHandler(fastify: FastifyInstance): Promise<void> {
                 sessionId: msg.sessionId,
                 ...permReq,
               }),
+            (toolName, toolInput, seq) => {
+              send(socket, {
+                type: 'tool_event',
+                sessionId: msg.sessionId,
+                toolName,
+                toolInput,
+                seq,
+              });
+            },
             (content, seq) => {
               send(socket, {
                 type: 'assistant_message',

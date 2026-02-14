@@ -18,6 +18,13 @@ export default function Sessions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creatingSession, setCreatingSession] = useState(false);
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [projects, setProjects] = useState<{ name: string; path: string }[]>([]);
+  const [selectedPath, setSelectedPath] = useState('');
+  const [customPath, setCustomPath] = useState('');
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [creatingProject, setCreatingProject] = useState(false);
   const token = activeServer?.token ?? null;
   const serverUrl = activeServer?.url ?? null;
 
@@ -48,17 +55,68 @@ export default function Sessions() {
     }
   };
 
-  const handleCreateSession = async () => {
+  const fetchProjects = async () => {
+    if (!token || !serverUrl) return;
+    setLoadingProjects(true);
+    try {
+      const data = await apiCall<{ name: string; path: string }[]>(
+        '/api/projects',
+        token,
+        undefined,
+        serverUrl
+      );
+      setProjects(data);
+    } catch {
+      // Silently fail — user can still type a custom path
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const handleCreateProject = async () => {
+    if (!token || !serverUrl || !newProjectName.trim() || creatingProject) return;
+    setCreatingProject(true);
+    setError(null);
+    try {
+      const project = await apiCall<{ name: string; path: string }>(
+        '/api/projects',
+        token,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newProjectName.trim() }),
+        },
+        serverUrl
+      );
+      setNewProjectName('');
+      setSelectedPath(project.path);
+      setCustomPath('');
+      await fetchProjects();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to create project');
+    } finally {
+      setCreatingProject(false);
+    }
+  };
+
+  const handleCreateSession = async (projectPath?: string) => {
     if (!token || !serverUrl || creatingSession) return;
     setCreatingSession(true);
     setError(null);
     try {
+      const body: Record<string, unknown> = {};
+      if (projectPath) body.projectPath = projectPath;
       const session = await apiCall<{ id: string }>(
         '/api/sessions',
         token,
-        { method: 'POST' },
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
         serverUrl
       );
+      setShowProjectPicker(false);
       navigate(`/chat/${session.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create session');
@@ -118,13 +176,98 @@ export default function Sessions() {
           </div>
         )}
 
-        <button
-          onClick={handleCreateSession}
-          disabled={!token || !serverUrl || creatingSession}
-          className="w-full bg-[#0f3460] hover:bg-[#0f3460]/80 disabled:bg-[#0f3460]/50 disabled:cursor-not-allowed text-white rounded-lg py-3 mb-4 text-sm font-medium min-h-[44px] transition-colors"
-        >
-          New Session
-        </button>
+        {!showProjectPicker ? (
+          <button
+            onClick={() => {
+              setShowProjectPicker(true);
+              fetchProjects();
+            }}
+            disabled={!token || !serverUrl || creatingSession}
+            className="w-full bg-[#0f3460] hover:bg-[#0f3460]/80 disabled:bg-[#0f3460]/50 disabled:cursor-not-allowed text-white rounded-lg py-3 mb-4 text-sm font-medium min-h-[44px] transition-colors"
+          >
+            New Session
+          </button>
+        ) : (
+          <div className="bg-[#16213e] rounded-lg p-4 mb-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-[#e0e0e0]">Select Project</h2>
+              <button
+                onClick={() => setShowProjectPicker(false)}
+                className="text-gray-500 hover:text-gray-300 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {loadingProjects ? (
+              <div className="text-gray-400 text-sm text-center py-4">
+                Loading projects...
+              </div>
+            ) : projects.length > 0 ? (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {projects.map((project) => (
+                  <button
+                    key={project.path}
+                    onClick={() => {
+                      setSelectedPath(project.path);
+                      setCustomPath('');
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] ${
+                      selectedPath === project.path
+                        ? 'bg-[#0f3460] text-white'
+                        : 'bg-[#1a1a2e] text-[#e0e0e0] hover:bg-[#1a1a2e]/80'
+                    }`}
+                  >
+                    <div className="font-medium">{project.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {project.path}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder="New project name..."
+                className="flex-1 bg-[#1a1a2e] text-[#e0e0e0] rounded-lg px-3 py-2.5 text-sm outline-none placeholder-gray-500 min-h-[44px] border border-[#0f3460]/30 focus:border-[#0f3460]"
+              />
+              <button
+                onClick={handleCreateProject}
+                disabled={!newProjectName.trim() || creatingProject}
+                className="bg-green-700 hover:bg-green-600 disabled:bg-green-900/50 disabled:text-gray-500 text-white rounded-lg px-4 text-sm font-medium min-h-[44px] transition-colors shrink-0"
+              >
+                {creatingProject ? '...' : '+ New'}
+              </button>
+            </div>
+
+            <div>
+              <input
+                type="text"
+                value={customPath}
+                onChange={(e) => {
+                  setCustomPath(e.target.value);
+                  setSelectedPath('');
+                }}
+                placeholder="Or type a custom path..."
+                className="w-full bg-[#1a1a2e] text-[#e0e0e0] rounded-lg px-3 py-2.5 text-sm outline-none placeholder-gray-500 min-h-[44px] border border-[#0f3460]/30 focus:border-[#0f3460]"
+              />
+            </div>
+
+            <button
+              onClick={() =>
+                handleCreateSession(selectedPath || customPath || undefined)
+              }
+              disabled={creatingSession}
+              className="w-full bg-[#0f3460] hover:bg-[#0f3460]/80 disabled:bg-[#0f3460]/50 text-white rounded-lg py-3 text-sm font-medium min-h-[44px] transition-colors"
+            >
+              {creatingSession ? 'Creating...' : 'Create Session'}
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-gray-400 text-center py-8">Loading...</div>

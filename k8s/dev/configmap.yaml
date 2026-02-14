@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: remote-ai-ide-config
+  namespace: lifetracker
+  labels:
+    app: remote-ai-ide
+data:
+  PORT: "3002"
+  HOST: "0.0.0.0"
+  NODE_ENV: "production"
+  MAX_SESSIONS: "10"
+  SESSION_TIMEOUT_MS: "3600000"
+  WHISPER_MODEL: "base"

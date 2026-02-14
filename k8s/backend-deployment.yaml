@@ -31,6 +31,9 @@ spec:
                 name: remote-ai-ide-config
             - secretRef:
                 name: remote-ai-ide-secrets
+          volumeMounts:
+            - name: host-root
+              mountPath: /root
           resources:
             requests:
               memory: "128Mi"
@@ -50,3 +53,8 @@ spec:
               port: 3002
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /root
+            type: Directory

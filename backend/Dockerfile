@@ -14,6 +14,9 @@ RUN npm prune --omit=dev
 FROM node:22-alpine AS run
 WORKDIR /app/backend
 
+# Install system dependencies needed by Claude Code sessions
+RUN apk add --no-cache bash git openssh
+
 # Install Claude CLI required by @anthropic-ai/claude-code
 RUN npm install -g @anthropic-ai/claude-code
 

@@ -106,7 +106,6 @@ export class ClaudeSession {
 
       for await (const message of conversation) {
         this.lastActivity = Date.now();
-        console.log('[SDK]', message.type, message.type === 'assistant' ? JSON.stringify((message as any).message?.content?.map((b: any) => ({ type: b.type, name: b.name }))) : '');
 
         if (message.type === 'assistant') {
           const blocks = message.message.content;

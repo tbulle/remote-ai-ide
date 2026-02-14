@@ -74,8 +74,17 @@ func (c *RESTClient) Health() (*HealthResponse, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	var h HealthResponse
-	return &h, json.NewDecoder(resp.Body).Decode(&h)
+	if err := json.Unmarshal(body, &h); err != nil {
+		// Plain text response (e.g. Traefik health intercept)
+		h.Status = strings.TrimSpace(string(body))
+		return &h, nil
+	}
+	return &h, nil
 }
 
 func (c *RESTClient) CreateSession(projectPath string) (*Session, error) {

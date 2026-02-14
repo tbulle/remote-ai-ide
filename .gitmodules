@@ -1,4 +1,0 @@
-[submodule ".claude-shared"]
-	path = .claude-shared
-	url = git@github.com:tbulle/server-instructions.git
-	branch = memory

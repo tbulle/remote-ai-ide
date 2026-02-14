@@ -1,1 +1,0 @@
-../../.claude-shared/agents/build-error-resolver.md

@@ -1,1 +1,0 @@
-../../.claude-shared/agents/copilot-worker.md

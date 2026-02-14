@@ -23,6 +23,8 @@ export default function Sessions() {
   const [selectedPath, setSelectedPath] = useState('');
   const [customPath, setCustomPath] = useState('');
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [creatingProject, setCreatingProject] = useState(false);
   const token = activeServer?.token ?? null;
   const serverUrl = activeServer?.url ?? null;
 
@@ -68,6 +70,32 @@ export default function Sessions() {
       // Silently fail — user can still type a custom path
     } finally {
       setLoadingProjects(false);
+    }
+  };
+
+  const handleCreateProject = async () => {
+    if (!token || !serverUrl || !newProjectName.trim() || creatingProject) return;
+    setCreatingProject(true);
+    setError(null);
+    try {
+      const project = await apiCall<{ name: string; path: string }>(
+        '/api/projects',
+        token,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newProjectName.trim() }),
+        },
+        serverUrl
+      );
+      setNewProjectName('');
+      setSelectedPath(project.path);
+      setCustomPath('');
+      await fetchProjects();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to create project');
+    } finally {
+      setCreatingProject(false);
     }
   };
 
@@ -198,6 +226,23 @@ export default function Sessions() {
                 ))}
               </div>
             ) : null}
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder="New project name..."
+                className="flex-1 bg-[#1a1a2e] text-[#e0e0e0] rounded-lg px-3 py-2.5 text-sm outline-none placeholder-gray-500 min-h-[44px] border border-[#0f3460]/30 focus:border-[#0f3460]"
+              />
+              <button
+                onClick={handleCreateProject}
+                disabled={!newProjectName.trim() || creatingProject}
+                className="bg-green-700 hover:bg-green-600 disabled:bg-green-900/50 disabled:text-gray-500 text-white rounded-lg px-4 text-sm font-medium min-h-[44px] transition-colors shrink-0"
+              >
+                {creatingProject ? '...' : '+ New'}
+              </button>
+            </div>
 
             <div>
               <input

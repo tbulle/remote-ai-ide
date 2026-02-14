@@ -77,6 +77,7 @@ export class ClaudeSession {
           cwd: this.projectPath,
           allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'mcp__*'],
           mcpServers: loadMcpServers(),
+          pathToClaudeCodeExecutable: '/usr/local/bin/claude',
           abortController: this.abortController,
           maxTurns: 30,
           canUseTool: async (

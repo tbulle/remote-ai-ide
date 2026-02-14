@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 env:
@@ -25,16 +25,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=dev" >> $GITHUB_OUTPUT
+          fi
+
       - uses: docker/build-push-action@v5
         with:
           context: .
           file: backend/Dockerfile
           push: true
           tags: |
-            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ steps.tag.outputs.tag }}
             ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
+          cache-from: type=gha,scope=backend-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=backend-${{ github.ref_name }}
 
   build-frontend:
     runs-on: ubuntu-latest
@@ -50,27 +59,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=dev" >> $GITHUB_OUTPUT
+          fi
+
       - uses: docker/build-push-action@v5
         with:
           context: .
           file: frontend/Dockerfile
           push: true
           tags: |
-            ${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ steps.tag.outputs.tag }}
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
-          build-args: |
-            VITE_API_URL=http://lifetracker.ddns.net:30020
-            VITE_WS_URL=ws://lifetracker.ddns.net:30020
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+          cache-from: type=gha,scope=frontend-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ github.ref_name }}
 
-  deploy:
+  deploy-dev:
+    if: github.ref_name == 'dev'
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to VPS
+      - name: Deploy dev to lifetracker
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -80,30 +96,81 @@ jobs:
           script: |
             set -e
 
-            # Ensure GHCR pull secret exists
             kubectl -n lifetracker get secret ghcr-secret 2>/dev/null || \
               kubectl -n lifetracker create secret docker-registry ghcr-secret \
                 --docker-server=ghcr.io \
                 --docker-username="$GITHUB_ACTOR" \
                 --docker-password="$GHCR_PAT"
 
-            # Clone or pull repo (authenticated for private repos)
             REPO_URL="https://${GITHUB_ACTOR}:${GHCR_PAT}@github.com/tbulle/remote-ai-ide.git"
             if [ -d /root/remote-ai-ide ]; then
-              cd /root/remote-ai-ide && git pull
+              cd /root/remote-ai-ide && git fetch origin && git checkout dev && git reset --hard origin/dev
             else
-              git clone "$REPO_URL" /root/remote-ai-ide
+              git clone -b dev "$REPO_URL" /root/remote-ai-ide
+            fi
+
+            kubectl apply -k /root/remote-ai-ide/k8s/dev/
+
+            kubectl -n lifetracker rollout restart deployment/dev-remote-ai-ide-backend
+            kubectl -n lifetracker rollout restart deployment/dev-remote-ai-ide-frontend
+
+            kubectl -n lifetracker rollout status deployment/dev-remote-ai-ide-backend --timeout=120s
+            kubectl -n lifetracker rollout status deployment/dev-remote-ai-ide-frontend --timeout=120s
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+  deploy-prod:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    strategy:
+      matrix:
+        include:
+          - host_secret: VPS_HOST
+            user_secret: VPS_USER
+            password_secret: VPS_PASSWORD
+            deploy_frontend: true
+          - host_secret: VPS_HOST_2
+            user_secret: VPS_USER_2
+            password_secret: VPS_PASSWORD_2
+            deploy_frontend: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy prod
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets[matrix.host_secret] }}
+          username: ${{ secrets[matrix.user_secret] }}
+          password: ${{ secrets[matrix.password_secret] }}
+          envs: GHCR_PAT,GITHUB_ACTOR,DEPLOY_FRONTEND
+          script: |
+            set -e
+
+            kubectl -n lifetracker get secret ghcr-secret 2>/dev/null || \
+              kubectl -n lifetracker create secret docker-registry ghcr-secret \
+                --docker-server=ghcr.io \
+                --docker-username="$GITHUB_ACTOR" \
+                --docker-password="$GHCR_PAT"
+
+            REPO_URL="https://${GITHUB_ACTOR}:${GHCR_PAT}@github.com/tbulle/remote-ai-ide.git"
+            if [ -d /root/remote-ai-ide ]; then
+              cd /root/remote-ai-ide && git fetch origin && git checkout main && git reset --hard origin/main
+            else
+              git clone -b main "$REPO_URL" /root/remote-ai-ide
             fi
 
             kubectl apply -k /root/remote-ai-ide/k8s/
 
-            # Restart deployments to pull new images
             kubectl -n lifetracker rollout restart deployment/remote-ai-ide-backend
-            kubectl -n lifetracker rollout restart deployment/remote-ai-ide-frontend
-
-            # Wait for rollout
             kubectl -n lifetracker rollout status deployment/remote-ai-ide-backend --timeout=120s
-            kubectl -n lifetracker rollout status deployment/remote-ai-ide-frontend --timeout=120s
+
+            if [ "$DEPLOY_FRONTEND" = "true" ]; then
+              kubectl -n lifetracker rollout restart deployment/remote-ai-ide-frontend
+              kubectl -n lifetracker rollout status deployment/remote-ai-ide-frontend --timeout=120s
+            fi
         env:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           GITHUB_ACTOR: ${{ github.actor }}
+          DEPLOY_FRONTEND: ${{ matrix.deploy_frontend }}

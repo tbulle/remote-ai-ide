@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-ai-ide-frontend
+  namespace: lifetracker
+  labels:
+    app: remote-ai-ide-dev
+    component: frontend
+spec:
+  type: NodePort
+  selector:
+    app: remote-ai-ide-dev
+    component: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30023

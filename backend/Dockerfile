@@ -15,7 +15,7 @@ FROM node:22-alpine AS run
 WORKDIR /app/backend
 
 # Install system dependencies needed by Claude Code sessions
-RUN apk add --no-cache bash git openssh
+RUN apk add --no-cache bash git openssh sshpass
 
 # Install Claude CLI (MCP tools installed dynamically at startup)
 RUN npm install -g @anthropic-ai/claude-code
